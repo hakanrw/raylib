@@ -44,16 +44,16 @@
 *     3. This notice may not be removed or altered from any source distribution.
 *
 **********************************************************************************************/
-//#include <pspkernel.h>
-//#include <pspdisplay.h>
-//#include <pspdebug.h>
-//#include <pspctrl.h>
+
+#include <kernel.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-//#include <GLES/egl.h>
-//#include <GLES/gl.h>
+
+#include <GL/gl.h>
+#include <GL/ps2gl.h>
 
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
@@ -62,10 +62,11 @@ typedef struct {
     // TODO: Define the platform specific variables required
 
     // Display data
-    EGLDisplay device;                  // Native display device (physical screen connection)
-    EGLSurface surface;                 // Surface to draw on, framebuffers (connected to context)
-    EGLContext context;                 // Graphic context, mode in which drawing can be done
-    EGLConfig config;                   // Graphic config
+    //EGLDisplay device;                  // Native display device (physical screen connection)
+    //EGLSurface surface;                 // Surface to draw on, framebuffers (connected to context)
+    //EGLContext context;                 // Graphic context, mode in which drawing can be done
+    //EGLConfig config;                   // Graphic config
+    bool first_frame;
 } PlatformData;
 
 //----------------------------------------------------------------------------------
@@ -332,7 +333,8 @@ void DisableCursor(void)
 // Swap back buffer with front buffer (screen drawing)
 void SwapScreenBuffer(void)
 {
-    eglSwapBuffers(platform.device, platform.surface);
+    // TODO
+    //eglSwapBuffers(platform.device, platform.surface);
 }
 
 //----------------------------------------------------------------------------------
@@ -442,7 +444,7 @@ int exit_callback(int arg1, int arg2, void *common)
 }
 
 /* Callback thread */
-int CallbackThread(SceSize args, void *argp)
+/*int CallbackThread(SceSize args, void *argp)
 {
     int cbid;
 
@@ -452,7 +454,7 @@ int CallbackThread(SceSize args, void *argp)
     //sceKernelSleepThreadCB();
 
     return 0;
-}
+}*/
 
 /* Sets up the callback thread and returns its thread id */
 int SetupCallbacks(void)
@@ -489,18 +491,138 @@ void CustomLog(int msgType, const char *text, va_list args)
         default: break;
     }
 }
+
+/* from ps2stuff
+typedef enum { kPsm32 = 0,
+    kPsm24            = 1,
+    kPsm16            = 2,
+    kPsm16s           = 10,
+    kPsm8             = 19,
+    kPsm8h            = 27,
+    kPsm4             = 20,
+    kPsm4hh           = 44,
+    kPsm4hl           = 36,
+
+    kPsmz32  = 48,
+    kPsmz24  = 49,
+    kPsmz16  = 50,
+    kPsmz16s = 58,
+
+    kInvalidPsm = -1
+} tPSM;
+*/
+
+#define PS2GL_KPSM32	0
+#define PS2GL_KPSM24	1
+#define PS2GL_KPSM16	2
+#define PS2GL_KPSM16S	10
+#define PS2GL_KPSM8	19
+#define PS2GL_KPSM8H	27
+#define PS2GL_KPSM4	20
+#define PS2GL_KPSM4HH	44
+#define PS2GL_KPSM4HL	36
+
+#define PS2GL_KPSMZ32	48
+#define PS2GL_KPSMZ24	49
+#define PS2GL_KPSMZ16	50
+#define PS2GL_KPSMZ16S	58
+
+/* from ps2glut */
+static void
+initGsMemory()
+{
+    // frame and depth buffer
+    pgl_slot_handle_t frame_slot_0, frame_slot_1, depth_slot;
+    frame_slot_0 = pglAddGsMemSlot(0, 70, PS2GL_KPSM32);
+    frame_slot_1 = pglAddGsMemSlot(70, 70, PS2GL_KPSM32);
+    depth_slot   = pglAddGsMemSlot(140, 70, PS2GL_KPSMZ24);
+    // lock these slots so that they aren't allocated by the memory manager
+    pglLockGsMemSlot(frame_slot_0);
+    pglLockGsMemSlot(frame_slot_1);
+    pglLockGsMemSlot(depth_slot);
+
+    // create gs memory area objects to use for frame and depth buffers
+    pgl_area_handle_t frame_area_0, frame_area_1, depth_area;
+    frame_area_0 = pglCreateGsMemArea(640, 224, PS2GL_KPSM24);
+    frame_area_1 = pglCreateGsMemArea(640, 224, PS2GL_KPSM24);
+    depth_area   = pglCreateGsMemArea(640, 224, PS2GL_KPSMZ24);
+    // bind the areas to the slots we created above
+    pglBindGsMemAreaToSlot(frame_area_0, frame_slot_0);
+    pglBindGsMemAreaToSlot(frame_area_1, frame_slot_1);
+    pglBindGsMemAreaToSlot(depth_area, depth_slot);
+
+    // draw to the new areas...
+    pglSetDrawBuffers(PGL_INTERLACED, frame_area_0, frame_area_1, depth_area);
+    // ...and display from them
+    pglSetDisplayBuffers(PGL_INTERLACED, frame_area_0, frame_area_1);
+
+    // 32 bit
+
+    // a slot for fonts (probably)
+    pglAddGsMemSlot(210, 2, PS2GL_KPSM8);
+
+    // 64x32
+    pglAddGsMemSlot(212, 1, PS2GL_KPSM32);
+    pglAddGsMemSlot(213, 1, PS2GL_KPSM32);
+    // 64x64
+    pglAddGsMemSlot(214, 2, PS2GL_KPSM32);
+    pglAddGsMemSlot(216, 2, PS2GL_KPSM32);
+    pglAddGsMemSlot(218, 2, PS2GL_KPSM32);
+    pglAddGsMemSlot(220, 2, PS2GL_KPSM32);
+    // 128x128
+    pglAddGsMemSlot(222, 8, PS2GL_KPSM32);
+    pglAddGsMemSlot(230, 8, PS2GL_KPSM32);
+    // 256x256
+    pglAddGsMemSlot(238, 32, PS2GL_KPSM32);
+    pglAddGsMemSlot(270, 32, PS2GL_KPSM32);
+    // 512x256
+    pglAddGsMemSlot(302, 64, PS2GL_KPSM32);
+    pglAddGsMemSlot(366, 64, PS2GL_KPSM32);
+
+    pglPrintGsMemAllocation();
+}
+
+void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar)
+{
+    GLdouble xmin, xmax, ymin, ymax;
+
+    ymax = zNear * tan(fovy * M_PI / 360.0f);
+    ymin = -ymax;
+    xmin = ymin * aspect;
+    xmax = ymax * aspect;
+
+    glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
+}
+
 // Initialize platform: graphics, inputs and more
 int InitPlatform(void)
 {
     //call backs
     SetupCallbacks();
 
-    // TODO
-    //init control
-    //sceCtrlSetSamplingCycle(0);
-    //sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
+    // set ctrl register
+    unsigned long* ctrl = (unsigned long*) 0x10003000;
+    *ctrl = 1;
 
+    platform.first_frame = true;
+    // ps2gl
+    SetGsCrt(1 /* interlaced */, 2 /* ntsc */, 1 /* frame */);
+    int immBufferVertexSize = 64 * 1024;
+    pglInit(immBufferVertexSize, 1000);
+    initGsMemory();
 
+    int h = CORE.Window.screen.height;
+    int w = CORE.Window.screen.width;
+
+    glViewport(0, 0, w, h);
+    glMatrixMode(GL_PROJECTION); // Select The Projection Matrix
+    glLoadIdentity();            // Reset The Projection Matrix
+    if (h == 0)                  // Calculate The Aspect Ratio Of The Window
+        gluPerspective(80, (float)w, 1.0, 5000.0);
+    else
+        gluPerspective(80, (float)w / (float)h, 1.0, 5000.0);
+    glMatrixMode(GL_MODELVIEW); // Select The Model View Matrix
+    glLoadIdentity();           // Reset The Model View Matrix
 
     CORE.Window.fullscreen = true;
     CORE.Window.flags |= FLAG_FULLSCREEN_MODE;
@@ -517,88 +639,6 @@ int InitPlatform(void)
     CORE.Input.Mouse.currentPosition.y = (float)CORE.Window.screen.height/2.0f;
     CORE.Input.Mouse.scale = (Vector2){ 1.0f, 1.0f };
 
-
-    EGLint samples = 0;
-    EGLint sampleBuffer = 0;
-    if (CORE.Window.flags & FLAG_MSAA_4X_HINT)
-    {
-        samples = 4;
-        sampleBuffer = 1;
-        TRACELOG(LOG_INFO, "PLATFORM: Trying to enable MSAA x4");
-    }
-
- 	
-
-    const EGLint attrib_list [] = {
-        EGL_RED_SIZE, 1,
-        EGL_GREEN_SIZE, 1,
-        EGL_BLUE_SIZE, 1,
-        EGL_ALPHA_SIZE, 0,
-        EGL_DEPTH_SIZE, 0,
-        EGL_NONE
-    };
-    
-
-    EGLint numConfigs = 0;
-
-    // Get an EGL device connection
-    platform.device = eglGetDisplay(0);
-    if (platform.device == EGL_NO_DISPLAY)
-    {
-        TRACELOG(LOG_WARNING, "PLATFORM: Failed to initialize EGL device");
-        return -1;
-    }
-
-    // Initialize the EGL device connection
-    if (eglInitialize(platform.device, NULL, NULL) == EGL_FALSE)
-    {
-        // If all of the calls to eglInitialize returned EGL_FALSE then an error has occurred.
-        TRACELOG(LOG_WARNING, "PLATFORM: Failed to initialize EGL device");
-        return -1;
-    }
-
-    
-    // Set rendering API
-    int ret;
-   /* int ret=eglBindAPI(EGL_OPENGL_ES_API);
-    if(!ret)
-    {
-        ret=eglGetError();
-        TRACELOG(LOG_ERROR,"PLATFORM:  eglBindAPI failed: 0x%08X",ret);
-        return -1;
-    }
-    TRACELOG(LOG_INFO,"PLATFORM: eglBindAPI success.");*/
-
-	// Get an appropriate EGL framebuffer configuration
-    ret=eglChooseConfig(platform.device, attrib_list, &platform.config, 1, &numConfigs);
-    if(!ret)
-    {
-        ret=eglGetError();
-        TRACELOG(LOG_ERROR,"PLATFORM: eglChooseConfig failed: 0x%08X",ret);
-        return -1;
-    }
-    if (numConfigs!=1)
-    {
-        TRACELOG(LOG_ERROR,"PLATFORM: No available configuration found.");
-        return -1;
-    }
-    TRACELOG(LOG_INFO,"PLATFORM: eglChooseConfig success.");
-    // Create an EGL rendering context
-    platform.context = eglCreateContext(platform.device, platform.config, NULL, NULL);
-    if (platform.context == EGL_NO_CONTEXT)
-    {
-        TRACELOG(LOG_WARNING, "PLATFORM: Failed to create EGL context");
-        return -1;
-    }
-
-    // Create an EGL window surface
-    //---------------------------------------------------------------------------------
-    //EGLint displayFormat = 0;
-
-    // EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is guaranteed to be accepted by ANativeWindow_setBuffersGeometry()
-    // As soon as we picked a EGLConfig, we can safely reconfigure the ANativeWindow buffers to match, using EGL_NATIVE_VISUAL_ID
-    //eglGetConfigAttrib(platform.device, platform.config, EGL_NATIVE_VISUAL_ID, &displayFormat);
-
     // At this point we need to manage render size vs screen size
     // NOTE: This function use and modify global module variables:
     //  -> CORE.Window.screen.width/CORE.Window.screen.height
@@ -609,25 +649,6 @@ int InitPlatform(void)
     //ANativeWindow_setBuffersGeometry(platform.app->window, CORE.Window.render.width, CORE.Window.render.height, displayFormat);
     //ANativeWindow_setBuffersGeometry(platform.app->window, 0, 0, displayFormat);       // Force use of native display size
 
-    platform.surface = eglCreateWindowSurface(platform.device, platform.config, 0, NULL);
-    if(platform.surface==EGL_NO_SURFACE)
-    {
-        ret=eglGetError();
-        TRACELOG(LOG_ERROR,"PLATFORM: eglCreateWindowSurface failed: 0x%08X",ret);
-        return -1;
-    }
-    TRACELOG(LOG_INFO,"PLATFORM: eglCreateWindowSurface success.");
-
-    // There must be at least one frame displayed before the buffers are swapped
-    //eglSwapInterval(platform.device, 1);
-
-    if (eglMakeCurrent(platform.device, platform.surface, platform.surface, platform.context) == EGL_FALSE)
-    {
-        ret=eglGetError();
-        TRACELOG(LOG_ERROR,"PLATFORM: Failed to attach EGL rendering context to EGL surface 0x%08X",ret);
-        return -1;
-    }
-    else
     {
         CORE.Window.render.width = CORE.Window.screen.width;
         CORE.Window.render.height = CORE.Window.screen.height;

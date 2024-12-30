@@ -329,7 +329,7 @@ endif
 
 ifeq ($(PLATFORM),PLATFORM_PS2)
     # Use ps2gl (OpenGL 1.2 subset)
-    GRAPHICS = GRAPHICS_API_OPENGL_12
+    GRAPHICS = GRAPHICS_API_OPENGL_11
 endif
 
 ifeq ($(PLATFORM),PLATFORM_PSP)
@@ -600,7 +600,7 @@ endif
 
 ifeq ($(PLATFORM),PLATFORM_PS2)
     CFLAGS = -Wl,-q -Wall -Wno-incompatible-pointer-types -Wno-pointer-sign -O3 -D_EE -D$(PLATFORM) -D$(GRAPHICS) 
-    INCLUDE_PATHS = -I. -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include
+    INCLUDE_PATHS = -I. -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include -I$(PS2SDK)/ports/include
 endif
 
 ifeq ($(PLATFORM),PLATFORM_PSP)

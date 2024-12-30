@@ -23,6 +23,8 @@
 *           - Sega Dreamcast (SH4)
 *       > PLATFORM_NINTENDO64:
 *           - Nintendo 64 (MIPS4300)
+*       > PLATFORM_PS2:
+*           - PlayStation 2
 *       > PLATFORM_PSP:
 *           - PlayStation Psp
 *       > PLATFORM_VITA:
@@ -567,6 +569,8 @@ const char *TextFormat(const char *text, ...);              // Formatting of tex
     #include "platforms/rcore_dreamcast.c"
 #elif defined(PLATFORM_NINTENDO64)
     #include "platforms/rcore_nintendo64.c"
+#elif defined(PLATFORM_PS2)
+    #include "platforms/rcore_ps2.c"
 #elif defined(PLATFORM_PSP)
     #include "platforms/rcore_psp.c"
 #elif defined(PLATFORM_VITA)
@@ -710,7 +714,7 @@ void InitWindow(int width, int height, const char *title)
 
     // Initialize platform
     //--------------------------------------------------------------
-#if defined(PLATFORM_PSP) || defined(PLATFORM_VITA) || defined(PLATFORM_ORBIS) || defined(PLATFORM_PROSPERO)
+#if defined(PLATFORM_PS2) || defined(PLATFORM_PSP) || defined(PLATFORM_VITA) || defined(PLATFORM_ORBIS) || defined(PLATFORM_PROSPERO)
     int ret=InitPlatform();
     if(ret!=0)
     {
@@ -724,11 +728,12 @@ void InitWindow(int width, int height, const char *title)
 
     // Initialize rlgl default data (buffers and shaders)
     // NOTE: CORE.Window.currentFbo.width and CORE.Window.currentFbo.height not used, just stored as globals in rlgl
-    rlglInit(CORE.Window.currentFbo.width, CORE.Window.currentFbo.height);
+    //rlglInit(CORE.Window.currentFbo.width, CORE.Window.currentFbo.height);
     isGpuReady = true; // Flag to note GPU has been initialized successfully
 
     // Setup default viewport
     SetupViewport(CORE.Window.currentFbo.width, CORE.Window.currentFbo.height);
+    // todo
 
 #if defined(SUPPORT_MODULE_RTEXT)
     #if defined(SUPPORT_DEFAULT_FONT)
@@ -933,7 +938,10 @@ void BeginDrawing(void)
 {
     // WARNING: Previously to BeginDrawing() other render textures drawing could happen,
     // consequently the measure for update vs draw is not accurate (only the total frame time is accurate)
-#if defined(PLATFORM_NINTENDO64)
+#if defined(PLATFORM_PS2)
+    printf("begin drawing\n");
+    pglBeginGeometry();
+#elif defined(PLATFORM_NINTENDO64)
     platform.disp = display_get();
 
     rdpq_attach(platform.disp, &platform.zbuffer);
@@ -955,6 +963,15 @@ void BeginDrawing(void)
 void EndDrawing(void)
 {
     rlDrawRenderBatchActive();      // Update and draw internal render batch
+
+#if defined(PLATFORM_PS2)
+    printf("enddrawing ps2\n");
+    pglEndGeometry();
+    if (!platform.first_frame) pglFinishRenderingGeometry(PGL_DONT_FORCE_IMMEDIATE_STOP);
+    platform.first_frame = false;
+    pglSwapBuffers();
+    pglRenderGeometry();
+#endif
 
 #if defined(SUPPORT_GIF_RECORDING)
     // Draw record indicator
