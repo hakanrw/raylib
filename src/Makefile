@@ -31,6 +31,8 @@
 #         - Sega Dreamcast (SH4)
 #     > PLATFORM_NINTENDO64:
 #         - Nintendo 64 (MIPS4300)
+#     > PLATFORM_PS2:
+#         - PlayStation 2
 #     > PLATFORM_PSP:
 #         - PlayStation PSP
 #     > PLATFORM_VITA:
@@ -70,7 +72,7 @@
 # Define required environment variables
 #------------------------------------------------------------------------------------------------
 # Define target platform: PLATFORM_DESKTOP, PLATFORM_DRM, PLATFORM_ANDROID, PLATFORM_WEB, PLATFORM_DREAMCAST, PLATFORM_NINTENDO64 ,PLATFORM_PSP, PLATFORM_VITA, PLATFORM_ORBIS, PLATFORM_PROSPERO
-PLATFORM             ?= PLATFORM_DREAMCAST
+PLATFORM             ?= PLATFORM_PS2
 
 ifeq ($(PLATFORM), PLATFORM_DESKTOP)
     TARGET_PLATFORM = PLATFORM_DESKTOP_GLFW
@@ -257,6 +259,11 @@ ifeq ($(PLATFORM),PLATFORM_NINTENDO64)
 endif
 
 #PlayStation Platforms
+ifeq ($(PLATFORM),PLATFORM_PS2)
+    PLATFORM_OS = PS2
+    PLATFORM_SHELL = sh
+endif
+
 ifeq ($(PLATFORM),PLATFORM_PSP)
     PLATFORM_OS = PSP
     PLATFORM_SHELL = sh
@@ -318,6 +325,11 @@ endif
 ifeq ($(PLATFORM),PLATFORM_NINTENDO64)
     # By default use OpenGL 1.1 on NINTENDO64
     GRAPHICS = GRAPHICS_API_OPENGL_11
+endif
+
+ifeq ($(PLATFORM),PLATFORM_PS2)
+    # Use ps2gl (OpenGL 1.2 subset)
+    GRAPHICS = GRAPHICS_API_OPENGL_12
 endif
 
 ifeq ($(PLATFORM),PLATFORM_PSP)
@@ -396,6 +408,11 @@ endif
 ifeq ($(PLATFORM),PLATFORM_DREAMCAST)
     CC = $(KOS_CC)
     AR = $(KOS_AR)
+endif
+
+ifeq ($(PLATFORM),PLATFORM_PS2)
+    CC = mips64r5900el-ps2-elf-gcc
+    AR = mips64r5900el-ps2-elf-ar
 endif
 
 ifeq ($(PLATFORM),PLATFORM_PSP)
@@ -579,6 +596,11 @@ endif
 ifeq ($(PLATFORM),PLATFORM_DREAMCAST)
     CFLAGS = $(KOS_CFLAGS) -Wno-error=incompatible-pointer-types -D$(PLATFORM) -D$(GRAPHICS) 
     INCLUDE_PATHS = $(KOS_INC_PATHS)
+endif
+
+ifeq ($(PLATFORM),PLATFORM_PS2)
+    CFLAGS = -Wl,-q -Wall -Wno-incompatible-pointer-types -Wno-pointer-sign -O3 -D_EE -D$(PLATFORM) -D$(GRAPHICS) 
+    INCLUDE_PATHS = -I. -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include
 endif
 
 ifeq ($(PLATFORM),PLATFORM_PSP)
@@ -941,6 +963,10 @@ endif
 
 ifeq ($(PLATFORM),PLATFORM_DREAMCAST)
 PREFIX ?= $(KOS_PORTS)
+endif
+
+ifeq ($(PLATFORM),PLATFORM_PS2)
+PREFIX ?= $(PS2SDK)/ports
 endif
 
 ifeq ($(PLATFORM),PLATFORM_PSP)
