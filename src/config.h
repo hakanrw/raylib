@@ -112,7 +112,7 @@
 
 #define RL_MAX_SHADER_LOCATIONS               32      // Maximum number of shader locations supported
 
-#define RL_CULL_DISTANCE_NEAR               0.01      // Default projection matrix near cull distance
+#define RL_CULL_DISTANCE_NEAR               0.1      // Default projection matrix near cull distance
 #define RL_CULL_DISTANCE_FAR              1000.0      // Default projection matrix far cull distance
 
 // Default shader vertex attribute locations
@@ -153,7 +153,7 @@
 //------------------------------------------------------------------------------------
 // Use QUADS instead of TRIANGLES for drawing when possible
 // Some lines-based shapes could still use lines
-#define SUPPORT_QUADS_DRAW_MODE         1
+//#define SUPPORT_QUADS_DRAW_MODE         1
 
 // rshapes: Configuration values
 //------------------------------------------------------------------------------------

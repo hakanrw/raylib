@@ -728,7 +728,7 @@ void InitWindow(int width, int height, const char *title)
 
     // Initialize rlgl default data (buffers and shaders)
     // NOTE: CORE.Window.currentFbo.width and CORE.Window.currentFbo.height not used, just stored as globals in rlgl
-    //rlglInit(CORE.Window.currentFbo.width, CORE.Window.currentFbo.height);
+    rlglInit(CORE.Window.currentFbo.width, CORE.Window.currentFbo.height);
     isGpuReady = true; // Flag to note GPU has been initialized successfully
 
     // Setup default viewport
@@ -1141,7 +1141,7 @@ void BeginMode3D(Camera camera)
     Matrix matView = MatrixLookAt(camera.position, camera.target, camera.up);
     rlMultMatrixf(MatrixToFloat(matView));      // Multiply modelview matrix by view matrix (camera)
 
-    rlEnableDepthTest();            // Enable DEPTH_TEST for 3D
+//    rlEnableDepthTest();            // Enable DEPTH_TEST for 3D
 }
 
 // Ends 3D mode and returns to default 2D orthographic mode
@@ -1157,7 +1157,7 @@ void EndMode3D(void)
 
     if (rlGetActiveFramebuffer() == 0) rlMultMatrixf(MatrixToFloat(CORE.Window.screenScale)); // Apply screen scaling if required
 
-    rlDisableDepthTest();           // Disable DEPTH_TEST for 2D
+//    rlDisableDepthTest();           // Disable DEPTH_TEST for 2D
 }
 
 // Initializes render texture for drawing
@@ -3652,7 +3652,7 @@ void SetupViewport(int width, int height)
 
     // Set orthographic projection to current framebuffer size
     // NOTE: Configured top-left corner as (0, 0)
-#if defined(PLATFORM_DREAMCAST) || defined(PLATFORM_NINTENDO64)
+#if defined(PLATFORM_PS2) || defined(PLATFORM_DREAMCAST) || defined(PLATFORM_NINTENDO64)
     rlOrtho(0, CORE.Window.render.width, CORE.Window.render.height, 0, -1.0f, 1.0f);
 #else
     rlOrtho(0, CORE.Window.render.width, CORE.Window.render.height, 0, 0.0f, 1.0f);

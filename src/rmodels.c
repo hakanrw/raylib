@@ -3790,11 +3790,11 @@ void DrawModelWiresEx(Model model, Vector3 position, Vector3 rotationAxis, float
 void DrawModelPoints(Model model, Vector3 position, float scale, Color tint)
 {
     rlEnablePointMode();
-    rlDisableBackfaceCulling();
+    //rlDisableBackfaceCulling();
 
     DrawModel(model, position, scale, tint);
 
-    rlEnableBackfaceCulling();
+    //rlEnableBackfaceCulling();
     rlDisableWireMode();
 }
 
@@ -3802,11 +3802,11 @@ void DrawModelPoints(Model model, Vector3 position, float scale, Color tint)
 void DrawModelPointsEx(Model model, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector3 scale, Color tint)
 {
     rlEnablePointMode();
-    rlDisableBackfaceCulling();
+    //rlDisableBackfaceCulling();
 
     DrawModelEx(model, position, rotationAxis, rotationAngle, scale, tint);
 
-    rlEnableBackfaceCulling();
+    //rlEnableBackfaceCulling();
     rlDisableWireMode();
 }
 

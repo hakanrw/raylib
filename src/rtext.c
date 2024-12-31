@@ -232,7 +232,7 @@ extern void LoadFontDefault(void)
 
     // Re-construct image from defaultFontData and generate OpenGL texture
     //----------------------------------------------------------------------
-#if defined(PLATFORM_DREAMCAST) || defined(PLATFORM_NINTENDO64)
+#if defined(PLATFORM_DREAMCAST) || defined(PLATFORM_NINTENDO64) || defined(PLATFORM_PS2)
     Image imFont = {
         .data = RL_CALLOC(128*128, 4),  // 4 bytes per pixel (rgb + alpha) there are some issues with different format in Dreamcast so to avoid problems for text by now we will use this
         .width = 128,
@@ -254,7 +254,7 @@ extern void LoadFontDefault(void)
             }
             else
             {
-                #if defined(PLATFORM_DREAMCAST)
+                #if defined(PLATFORM_DREAMCAST) || defined(PLATFORM_PS2)
                 ((unsigned int *)imFont.data)[i + j] = 0x000000ff;
                 #endif
                 #if defined(PLATFORM_NINTENDO64)

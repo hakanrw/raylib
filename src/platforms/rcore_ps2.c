@@ -582,18 +582,6 @@ initGsMemory()
     pglPrintGsMemAllocation();
 }
 
-void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar)
-{
-    GLdouble xmin, xmax, ymin, ymax;
-
-    ymax = zNear * tan(fovy * M_PI / 360.0f);
-    ymin = -ymax;
-    xmin = ymin * aspect;
-    xmax = ymax * aspect;
-
-    glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
-}
-
 // Initialize platform: graphics, inputs and more
 int InitPlatform(void)
 {
@@ -610,19 +598,6 @@ int InitPlatform(void)
     int immBufferVertexSize = 64 * 1024;
     pglInit(immBufferVertexSize, 1000);
     initGsMemory();
-
-    int h = CORE.Window.screen.height;
-    int w = CORE.Window.screen.width;
-
-    glViewport(0, 0, w, h);
-    glMatrixMode(GL_PROJECTION); // Select The Projection Matrix
-    glLoadIdentity();            // Reset The Projection Matrix
-    if (h == 0)                  // Calculate The Aspect Ratio Of The Window
-        gluPerspective(80, (float)w, 1.0, 5000.0);
-    else
-        gluPerspective(80, (float)w / (float)h, 1.0, 5000.0);
-    glMatrixMode(GL_MODELVIEW); // Select The Model View Matrix
-    glLoadIdentity();           // Reset The Model View Matrix
 
     CORE.Window.fullscreen = true;
     CORE.Window.flags |= FLAG_FULLSCREEN_MODE;

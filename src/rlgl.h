@@ -2301,6 +2301,8 @@ void rlglInit(int width, int height)
     RLGL.State.currentMatrix = &RLGL.State.modelview;
 #endif  // GRAPHICS_API_OPENGL_33 || GRAPHICS_API_OPENGL_ES2
 
+
+
     // Initialize OpenGL default states
     //----------------------------------------------------------
     // Init state: Depth test
@@ -2315,20 +2317,24 @@ void rlglInit(int width, int height)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);      // Color blending function (how colors are mixed)
     glEnable(GL_BLEND);                                     // Enable color blending (required to work with transparencies)
 
+    /*
     // Init state: Culling
     // NOTE: All shapes/models triangles are drawn CCW
     glCullFace(GL_BACK);                                    // Cull the back face (default)
     glFrontFace(GL_CCW);                                    // Front face are defined counter clockwise (default)
     glEnable(GL_CULL_FACE);                                 // Enable backface culling
+    */
 
     // Init state: Cubemap seamless
 #if defined(GRAPHICS_API_OPENGL_33)
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);                 // Seamless cubemaps (not supported on OpenGL ES 2.0)
 #endif
 
+
+
 #if defined(GRAPHICS_API_OPENGL_11)
     // Init state: Color hints (deprecated in OpenGL 3.0+)
-#if !defined(PLATFORM_PSP)
+#if !defined(PLATFORM_PS2) && !defined(PLATFORM_PSP)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);      // Improve quality of color and texture coordinate interpolation
 #endif
     glShadeModel(GL_SMOOTH);                                // Smooth shading between vertex (vertex colors interpolation)
