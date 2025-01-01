@@ -816,6 +816,10 @@ ifeq ($(RAYLIB_MODULE_SPINE),TRUE)
     OBJS += rspine.o
 endif
 
+ifeq ($(TARGET_PLATFORM),PLATFORM_PS2)
+    OBJS += ps2drv.o ps2mod.o
+endif
+
 # Define processes to execute
 #------------------------------------------------------------------------------------------------
 # Default target entry
@@ -941,6 +945,23 @@ endif
 
 # Compile android_native_app_glue module
 android_native_app_glue.o : $(NATIVE_APP_GLUE)/android_native_app_glue.c
+	$(CC) -c $< $(CFLAGS) $(INCLUDE_PATHS)
+
+# Compile PlayStation 2 drivers
+PS2DRV := platforms/ps2drv
+ps2mod.o: $(PS2DRV)/filexio.irx $(PS2DRV)/iomanx.irx $(PS2DRV)/mcman.irx $(PS2DRV)/mcserv.irx $(PS2DRV)/ps2kbd.irx $(PS2DRV)/usbd.irx
+	for drv in $^; \
+	do \
+		base=$$(basename -s .irx "$$drv"); \
+		bin2c "$$drv" "$$base".c ps2drv_"$$base"; \
+		$(CC) -c "$$base".c -o "$$base".o; \
+		rm "$$base".c; \
+	done; \
+	objs=$$(echo $^ | xargs -n 1 basename -s .irx | sed 's/$$/.o/'); \
+	$(CC) -r $$objs -o $@; \
+	$(RM) $$objs;
+
+ps2drv.o: $(PS2DRV)/ps2drv.c
 	$(CC) -c $< $(CFLAGS) $(INCLUDE_PATHS)
 
 # Install generated and needed files to desired directories.

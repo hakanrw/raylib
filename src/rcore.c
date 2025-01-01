@@ -939,7 +939,6 @@ void BeginDrawing(void)
     // WARNING: Previously to BeginDrawing() other render textures drawing could happen,
     // consequently the measure for update vs draw is not accurate (only the total frame time is accurate)
 #if defined(PLATFORM_PS2)
-    printf("begin drawing\n");
     pglBeginGeometry();
 #elif defined(PLATFORM_NINTENDO64)
     platform.disp = display_get();
@@ -965,7 +964,6 @@ void EndDrawing(void)
     rlDrawRenderBatchActive();      // Update and draw internal render batch
 
 #if defined(PLATFORM_PS2)
-    printf("enddrawing ps2\n");
     pglEndGeometry();
     if (!platform.first_frame) pglFinishRenderingGeometry(PGL_DONT_FORCE_IMMEDIATE_STOP);
     platform.first_frame = false;

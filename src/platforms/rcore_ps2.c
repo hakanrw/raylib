@@ -55,6 +55,9 @@
 #include <GL/gl.h>
 #include <GL/ps2gl.h>
 
+#include <libkbd.h>
+#include "ps2drv/ps2drv.h"
+
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
 //----------------------------------------------------------------------------------
@@ -407,29 +410,99 @@ void PollInputEvents(void)
     CORE.Input.Keyboard.charPressedQueueCount = 0;
 
     // Reset key repeats
-    for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) CORE.Input.Keyboard.keyRepeatInFrame[i] = 0;
+    for (int i = 0; i < MAX_KEYBOARD_KEYS; i++)
+    {
+        CORE.Input.Keyboard.previousKeyState[i] = CORE.Input.Keyboard.currentKeyState[i];
+        CORE.Input.Keyboard.keyRepeatInFrame[i] = 0;
+    }
+
+    // Register previous mouse states
+    for (int i = 0; i < MAX_MOUSE_BUTTONS; i++) CORE.Input.Mouse.previousButtonState[i] = CORE.Input.Mouse.currentButtonState[i];
+
+    // Register previous mouse wheel state
+    CORE.Input.Mouse.previousWheelMove = CORE.Input.Mouse.currentWheelMove;
+    CORE.Input.Mouse.currentWheelMove = (Vector2){ 0.0f, 0.0f };
+
+    // Register previous mouse position
+    CORE.Input.Mouse.previousPosition = CORE.Input.Mouse.currentPosition;
 
     // Reset last gamepad button/axis registered state
     CORE.Input.Gamepad.lastButtonPressed = 0; // GAMEPAD_BUTTON_UNKNOWN
     //CORE.Input.Gamepad.axisCount = 0;
 
-    // Register previous touch states
-    for (int i = 0; i < MAX_TOUCH_POINTS; i++) CORE.Input.Touch.previousTouchState[i] = CORE.Input.Touch.currentTouchState[i];
+    PS2KbdRawKey key;
+    for (int read_len = PS2KbdReadRaw(&key); read_len > 0; read_len = PS2KbdReadRaw(&key))
+    {
+        bool key_down = key.state == PS2KBD_RAWKEY_DOWN;
+        bool is_char = false;
+        int raylib_key_code = 0;
 
-    // Reset touch positions
-    // TODO: It resets on target platform the mouse position and not filled again until a move-event,
-    // so, if mouse is not moved it returns a (0, 0) position... this behaviour should be reviewed!
-    //for (int i = 0; i < MAX_TOUCH_POINTS; i++) CORE.Input.Touch.position[i] = (Vector2){ 0, 0 };
+        if (key.key >= 4 && key.key <= 29) // a-z
+        {
+            is_char = true;
+            raylib_key_code = key.key + 61;
+        }
+        else if (key.key >= 30 && key.key <= 38) // 1-9
+        {
+            is_char = true;
+            raylib_key_code = key.key + 19;
+        }
+        else if (key.key == 39) // 0
+        {
+            is_char = true;
+            raylib_key_code = 48;
+        }
+        else
+        {
+            switch (key.key)
+            {
+                case 40: raylib_key_code = KEY_ENTER; break;
+                case 42: raylib_key_code = KEY_BACKSPACE; break;
+                case 44: raylib_key_code = KEY_SPACE; is_char = true; break;
+                case 79: raylib_key_code = KEY_RIGHT; break;
+                case 80: raylib_key_code = KEY_LEFT; break;
+                case 81: raylib_key_code = KEY_DOWN; break;
+                case 82: raylib_key_code = KEY_UP; break;
+                case 225: raylib_key_code = KEY_LEFT_SHIFT; break;
+                case 229: raylib_key_code = KEY_RIGHT_SHIFT; break;
+                default: TRACELOG(LOG_INFO,"PLATFORM: PollInputEvents: unmapped key %d", key.key);
+            }
+        }
 
-    // Register previous keys states
-    // NOTE: Android supports up to 260 keys
-    //for (int i = 0; i < 260; i++)
-    //{
-    //    CORE.Input.Keyboard.previousKeyState[i] = CORE.Input.Keyboard.currentKeyState[i];
-    //    CORE.Input.Keyboard.keyRepeatInFrame[i] = 0;
-    //}
+        // If key was up, add it to the key pressed queue
+        if ((CORE.Input.Keyboard.currentKeyState[raylib_key_code] == 0) && (CORE.Input.Keyboard.keyPressedQueueCount < MAX_KEY_PRESSED_QUEUE))
+        {
+            //TRACELOG(LOG_INFO,"KBD: Add to queue");
+            CORE.Input.Keyboard.keyPressedQueue[CORE.Input.Keyboard.keyPressedQueueCount] = raylib_key_code;
+            CORE.Input.Keyboard.keyPressedQueueCount++;
+        }
 
-    // TODO: Poll input events for current plaform
+        if (key_down && is_char && (CORE.Input.Keyboard.charPressedQueueCount < MAX_CHAR_PRESSED_QUEUE))
+        {
+            //TRACELOG(LOG_INFO,"KBD: Add to char queue");
+            CORE.Input.Keyboard.charPressedQueue[CORE.Input.Keyboard.charPressedQueueCount] = raylib_key_code;
+
+            //TRACELOG(LOG_INFO,"KBD: LSHift %d", CORE.Input.Keyboard.currentKeyState[KEY_LEFT_SHIFT]);
+            //TRACELOG(LOG_INFO,"KBD: RShift %d", CORE.Input.Keyboard.currentKeyState[KEY_RIGHT_SHIFT]);
+
+            if (!CORE.Input.Keyboard.currentKeyState[KEY_LEFT_SHIFT]
+                && !CORE.Input.Keyboard.currentKeyState[KEY_RIGHT_SHIFT])
+            {
+                if (raylib_key_code >= KEY_A && raylib_key_code <= KEY_Z)
+                    CORE.Input.Keyboard.charPressedQueue[CORE.Input.Keyboard.charPressedQueueCount] += 32; // Lowercase
+            }
+            else
+            {
+                if (raylib_key_code >= KEY_ZERO && raylib_key_code <= KEY_NINE)
+                    CORE.Input.Keyboard.charPressedQueue[CORE.Input.Keyboard.charPressedQueueCount] -= 16; // Symbols
+            }
+
+            CORE.Input.Keyboard.charPressedQueueCount++;
+        }
+
+        CORE.Input.Keyboard.currentKeyState[raylib_key_code] = key.state == PS2KBD_RAWKEY_DOWN;
+        //TRACELOG(LOG_INFO,"KBD: %d", key.state == PS2KBD_RAWKEY_DOWN);
+    }
 }
 
 //----------------------------------------------------------------------------------
@@ -482,12 +555,12 @@ void CustomLog(int msgType, const char *text, va_list args)
 
     switch (msgType)
     {
-        case LOG_TRACE: printf("[PSP][TRACE]%s\n",buffer); break;
-        case LOG_DEBUG: printf("[PSP][DEBUG]%s\n",buffer); break;
-        case LOG_INFO: printf("[PSP][INFO]%s\n",buffer); break;
-        case LOG_WARNING: printf("[PSP][WARNING]%s\n",buffer); break;
-        case LOG_ERROR: printf("[PSP][ERROR]%s\n",buffer); break;
-        case LOG_FATAL: printf("[PSP][FATAL]%s\n",buffer); break;
+        case LOG_TRACE: printf("[PS2][TRACE]%s\n",buffer); break;
+        case LOG_DEBUG: printf("[PS2][DEBUG]%s\n",buffer); break;
+        case LOG_INFO: printf("[PS2][INFO]%s\n",buffer); break;
+        case LOG_WARNING: printf("[PS2][WARNING]%s\n",buffer); break;
+        case LOG_ERROR: printf("[PS2][ERROR]%s\n",buffer); break;
+        case LOG_FATAL: printf("[PS2][FATAL]%s\n",buffer); break;
         default: break;
     }
 }
@@ -528,8 +601,7 @@ typedef enum { kPsm32 = 0,
 #define PS2GL_KPSMZ16S	58
 
 /* from ps2glut */
-static void
-initGsMemory()
+static void initGsMemory()
 {
     // frame and depth buffer
     pgl_slot_handle_t frame_slot_0, frame_slot_1, depth_slot;
@@ -653,6 +725,14 @@ int InitPlatform(void)
     // Initialize base path for storage
     CORE.Storage.basePath = GetWorkingDirectory();
     TRACELOG(LOG_INFO, "PLATFORM: Initialized");
+
+    ps2drv_load_modules(); // Load PlayStation 2 modules into IOP
+                           // For keyboard, audio, file management etc.
+    PS2KbdSetReadmode(PS2KBD_READMODE_RAW);
+    PS2KbdSetBlockingMode(PS2KBD_NONBLOCKING);
+
+    CORE.Input.Keyboard.currentKeyState[KEY_LEFT_SHIFT] = 0;
+    CORE.Input.Keyboard.currentKeyState[KEY_RIGHT_SHIFT] = 0;
 
     return 0;
 }
