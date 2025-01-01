@@ -112,8 +112,12 @@
 
 #define RL_MAX_SHADER_LOCATIONS               32      // Maximum number of shader locations supported
 
-#define RL_CULL_DISTANCE_NEAR               0.1      // Default projection matrix near cull distance
+#if defined(PLATFORM_PS2)
+#define RL_CULL_DISTANCE_NEAR               0.1       // PSGL behaves terribly on 3D when near culling is 0.01
+#else
+#define RL_CULL_DISTANCE_NEAR               0.01      // Default projection matrix near cull distance
 #define RL_CULL_DISTANCE_FAR              1000.0      // Default projection matrix far cull distance
+#endif
 
 // Default shader vertex attribute locations
 #define RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION    0
@@ -153,7 +157,11 @@
 //------------------------------------------------------------------------------------
 // Use QUADS instead of TRIANGLES for drawing when possible
 // Some lines-based shapes could still use lines
-//#define SUPPORT_QUADS_DRAW_MODE         1
+#if defined(PLATFORM_PS2)
+// Force triangle mode for PS2
+#else
+#define SUPPORT_QUADS_DRAW_MODE         1
+#endif
 
 // rshapes: Configuration values
 //------------------------------------------------------------------------------------
